@@ -147,6 +147,27 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	zone, err := r.client.GetZone(plan.Zone.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("error fetching zone", err.Error())
+		return
+	}
+
+	if existing, lookupErr := r.client.GetRecordByTypeByKey(zone, plan.Type.ValueString(), plan.Key.ValueString()); lookupErr == nil {
+		resp.Diagnostics.AddError(
+			"record already exists",
+			fmt.Sprintf(
+				"a %s record with key %q already exists in zone %q (id=%s, value=%q). "+
+					"If this record should be managed by Terraform, import it instead: "+
+					"terraform import <resource address> %s:%s:%s",
+				plan.Type.ValueString(), plan.Key.ValueString(), plan.Zone.ValueString(),
+				existing.Id, existing.Value,
+				plan.Zone.ValueString(), plan.Type.ValueString(), existing.Id,
+			),
+		)
+		return
+	}
+
 	recordAction := cscdm.RecordAction{
 		ZoneEdit: cscdm.ZoneEdit{
 			Action:      "ADD",
