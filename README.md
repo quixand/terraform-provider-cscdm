@@ -40,6 +40,10 @@ resource "cscdm_record" "www_example_com" {
   key   = "www"
   value = "127.0.0.1"
   ttl   = 300
+
+  # optional: sent to CSC as "changeId" and "comments" on the zone edit
+  change_id = "example change ID"
+  comments  = "some example comments"
 }
 ```
 
@@ -52,6 +56,12 @@ provider "cscdm" {
     # the field below or with the `CSCDM_BASE_URL` environment variable
     base_url = "https://apis-ote.cscglobal.com/dbs/api/v2/"
 }
+```
+
+# Terraform imports
+Import a record resource. you can see the record id in the error message when you try to create a record that already exists
+```bash
+terraform import 'module.certificates.cscdm_record.csc["test.domain.com"]' 'domain.com:CNAME:csc_record_id'
 ```
 
 ## Development Requirements
@@ -98,3 +108,33 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 ```shell
 make testacc
 ```
+
+## GOPATH
+You may want to adjust your GOPATH when building to keep the binary local
+
+By default, the GOPATH is ```$HOME/go``` You can export this to a more local folder if you don't want it dumped 
+in your home folder
+
+```bash
+$ export GOPATH=/path/to/project/
+```
+
+### Set the build location as the provider binary path using dev_overrides
+
+You can set the bin folder as the default location for the provider binary in terraform so that any projects using it 
+will load your local development version when running terraform init, instead of pulling the provider from the hashicorp online repo
+
+See https://discuss.hashicorp.com/t/development-overrides-for-providers-under-development/18888
+
+~/.terraformrc
+```
+provider_installation {
+    dev_overrides {
+        "rropen/cscdm" = "/path/to/terraform-provider-cscdm/bin"
+    }
+
+# For all other providers, install as normal.
+    direct {}
+}
+```
+

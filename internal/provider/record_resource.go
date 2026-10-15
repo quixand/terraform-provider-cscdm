@@ -42,6 +42,8 @@ type RecordResourceModel struct {
 	Value       types.String `tfsdk:"value"`
 	Ttl         types.Int64  `tfsdk:"ttl"`
 	Priority    types.Int64  `tfsdk:"priority"`
+	ChangeId    types.String `tfsdk:"change_id"`
+	Comments    types.String `tfsdk:"comments"`
 	Status      types.String `tfsdk:"status"`
 	LastUpdated types.String `tfsdk:"last_updated"`
 }
@@ -83,6 +85,12 @@ func (r *RecordResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional: true,
 			},
 			"priority": schema.Int64Attribute{
+				Optional: true,
+			},
+			"change_id": schema.StringAttribute{
+				Optional: true,
+			},
+			"comments": schema.StringAttribute{
 				Optional: true,
 			},
 			"status": schema.StringAttribute{
@@ -176,6 +184,8 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 			NewValue:    plan.Value.ValueString(),
 			NewTtl:      plan.Ttl.ValueInt64(),
 			NewPriority: plan.Priority.ValueInt64(),
+			ChangeId:    plan.ChangeId.ValueString(),
+			Comments:    plan.Comments.ValueString(),
 		},
 		ZoneName: plan.Zone.ValueString(),
 	}
@@ -251,6 +261,8 @@ func (r *RecordResource) Update(ctx context.Context, req resource.UpdateRequest,
 			NewValue:     plan.Value.ValueString(),
 			NewTtl:       plan.Ttl.ValueInt64(),
 			NewPriority:  plan.Priority.ValueInt64(),
+			ChangeId:     plan.ChangeId.ValueString(),
+			Comments:     plan.Comments.ValueString(),
 		},
 		ZoneName: plan.Zone.ValueString(),
 	}
@@ -285,6 +297,8 @@ func (r *RecordResource) Delete(ctx context.Context, req resource.DeleteRequest,
 			RecordType:   state.Type.ValueString(),
 			CurrentKey:   state.Key.ValueString(),
 			CurrentValue: state.Value.ValueString(),
+			ChangeId:     state.ChangeId.ValueString(),
+			Comments:     state.Comments.ValueString(),
 		},
 		ZoneName: state.Zone.ValueString(),
 	}

@@ -26,6 +26,8 @@ type ZoneEdit struct {
 	NewValue        string `json:"newValue,omitempty"`
 	NewTtl          int64  `json:"newTtl,omitempty"`
 	NewPriority     int64  `json:"newPriority,omitempty"`
+	ChangeId        string `json:"changeId,omitempty"`
+	Comments        string `json:"comments,omitempty"`
 }
 
 func (ze *ZoneEdit) KeyId() string {
@@ -147,6 +149,8 @@ func (c *Client) editZones() error {
 				NewValue:        recordAction.NewValue,
 				NewTtl:          recordAction.NewTtl,
 				NewPriority:     recordAction.NewPriority,
+				ChangeId:        recordAction.ChangeId,
+				Comments:        recordAction.Comments,
 			},
 		)
 	}
