@@ -16,7 +16,7 @@ func TestClient_PerformRecordAction_SurfacesFailedZoneEditMessage(t *testing.T) 
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/zones/edits":
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"content": map[string]string{"status": "PENDING", "message": ""},
 				"links": map[string]string{
 					"self":   "/api/v2/zones/edits/edit-1",
@@ -24,7 +24,7 @@ func TestClient_PerformRecordAction_SurfacesFailedZoneEditMessage(t *testing.T) 
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/zones/edits/status/edit-1":
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"content": map[string]string{"status": "FAILED", "message": failureMessage},
 			})
 		case r.Method == http.MethodDelete && r.URL.Path == "/api/v2/zones/edits/edit-1":
@@ -57,7 +57,7 @@ func TestClient_PerformRecordAction_SurfacesCreateErrorDetails(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost && r.URL.Path == "/api/v2/zones/edits" {
 			w.WriteHeader(http.StatusConflict)
-			json.NewEncoder(w).Encode(map[string]string{
+			_ = json.NewEncoder(w).Encode(map[string]string{
 				"code":        "RECORD_ALREADY_EXISTS",
 				"description": "a record with this key already exists",
 				"value":       "www",
@@ -110,6 +110,29 @@ func TestClient_GetRecordByTypeByKey_FindsExistingRecord(t *testing.T) {
 	}
 }
 
+func TestClient_GetRecordByTypeByKeyValue_MatchesValueAmongSameKey(t *testing.T) {
+	client := &cscdm.Client{}
+	zone := &cscdm.Zone{
+		ZoneName: "example.com",
+		A: []cscdm.ZoneRecord{
+			{Id: "rec-1", Key: "www", Value: "1.1.1.1"},
+			{Id: "rec-2", Key: "www", Value: "2.2.2.2"},
+		},
+	}
+
+	record, err := client.GetRecordByTypeByKeyValue(zone, "A", "www", "2.2.2.2")
+	if err != nil {
+		t.Fatalf("expected to find record, got error: %s", err)
+	}
+	if record.Id != "rec-2" {
+		t.Errorf("expected id %q, got %q", "rec-2", record.Id)
+	}
+
+	if _, err := client.GetRecordByTypeByKeyValue(zone, "A", "www", "3.3.3.3"); err == nil {
+		t.Error("expected error for a key with no matching value, got nil")
+	}
+}
+
 func TestClient_PerformRecordAction_SendsChangeIdAndComments(t *testing.T) {
 	bodies := make(chan map[string]any, 1)
 
@@ -117,10 +140,12 @@ func TestClient_PerformRecordAction_SendsChangeIdAndComments(t *testing.T) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/zones/edits":
 			var body map[string]any
-			json.NewDecoder(r.Body).Decode(&body)
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("failed to decode request body: %s", err)
+			}
 			bodies <- body
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"content": map[string]string{"status": "PENDING", "message": ""},
 				"links": map[string]string{
 					"self":   "/api/v2/zones/edits/edit-1",
@@ -128,7 +153,7 @@ func TestClient_PerformRecordAction_SendsChangeIdAndComments(t *testing.T) {
 				},
 			})
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v2/zones/edits/status/edit-1":
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"content": map[string]string{"status": "FAILED", "message": "stop here"},
 			})
 		case r.Method == http.MethodDelete && r.URL.Path == "/api/v2/zones/edits/edit-1":
@@ -144,7 +169,8 @@ func TestClient_PerformRecordAction_SendsChangeIdAndComments(t *testing.T) {
 	client.Configure("test-key", "test-token", server.URL+"/api/v2/")
 	defer client.Stop()
 
-	client.PerformRecordAction(&cscdm.RecordAction{
+	// The error is expected (status is FAILED); the test only inspects the request body.
+	_, _ = client.PerformRecordAction(&cscdm.RecordAction{
 		ZoneEdit: cscdm.ZoneEdit{
 			Action: "ADD", RecordType: "CNAME", NewKey: "www", NewValue: "example.com", NewTtl: 300,
 			ChangeId: "chg-1", Comments: "a comment",
@@ -153,7 +179,14 @@ func TestClient_PerformRecordAction_SendsChangeIdAndComments(t *testing.T) {
 	})
 
 	body := <-bodies
-	edit := body["edits"].([]any)[0].(map[string]any)
+	edits, ok := body["edits"].([]any)
+	if !ok || len(edits) == 0 {
+		t.Fatalf("expected non-empty edits array, got %v", body["edits"])
+	}
+	edit, ok := edits[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected edit to be an object, got %T", edits[0])
+	}
 	if edit["changeId"] != "chg-1" {
 		t.Errorf("expected changeId chg-1, got %v", edit["changeId"])
 	}

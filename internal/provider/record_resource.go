@@ -161,15 +161,15 @@ func (r *RecordResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	if existing, lookupErr := r.client.GetRecordByTypeByKey(zone, plan.Type.ValueString(), plan.Key.ValueString()); lookupErr == nil {
+	if existing, lookupErr := r.client.GetRecordByTypeByKeyValue(zone, plan.Type.ValueString(), plan.Key.ValueString(), plan.Value.ValueString()); lookupErr == nil {
 		resp.Diagnostics.AddError(
 			"record already exists",
 			fmt.Sprintf(
-				"a %s record with key %q already exists in zone %q (id=%s, value=%q). "+
+				"a %s record with key %q and value %q already exists in zone %q (id=%s). "+
 					"If this record should be managed by Terraform, import it instead: "+
 					"terraform import <resource address> %s:%s:%s",
-				plan.Type.ValueString(), plan.Key.ValueString(), plan.Zone.ValueString(),
-				existing.Id, existing.Value,
+				plan.Type.ValueString(), plan.Key.ValueString(), existing.Value, plan.Zone.ValueString(),
+				existing.Id,
 				plan.Zone.ValueString(), plan.Type.ValueString(), existing.Id,
 			),
 		)
