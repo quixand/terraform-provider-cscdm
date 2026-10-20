@@ -134,12 +134,12 @@ See the docs [here](https://developer.hashicorp.com/terraform/cli/config/config-
 ~/.terraformrc
 ```hcl
 provider_installation {
-    dev_overrides {
-        "rropen/cscdm" = "/path/to/terraform-provider-cscdm/bin"
-    }
+  dev_overrides {
+    "rropen/cscdm" = "/path/to/terraform-provider-cscdm/bin"
+  }
 
-# For all other providers, install as normal.
-    direct {}
+  # For all other providers, install as normal.
+  direct {}
 }
 ```
 
