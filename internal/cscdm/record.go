@@ -556,6 +556,23 @@ func (c *Client) GetRecordByTypeByKey(zone *Zone, recordType string, key string)
 	return record, nil
 }
 
+// GetRecordByTypeByKeyValue matches on key and value, since a zone can hold
+// several records of the same type with the same key.
+func (c *Client) GetRecordByTypeByKeyValue(zone *Zone, recordType string, key string, value string) (*ZoneRecord, error) {
+	records := c.GetRecordsByType(zone, recordType)
+	if records == nil {
+		return nil, fmt.Errorf("unsupported record type: %s", recordType)
+	}
+
+	for i, record := range records {
+		if record.Key == key && record.Value == value {
+			return &records[i], nil
+		}
+	}
+
+	return nil, fmt.Errorf("record of type %s with key '%s' and value '%s' was not found in zone %s", recordType, key, value, zone.ZoneName)
+}
+
 func (c *Client) GetRecordByTypeById(zone *Zone, recordType string, id string) (*ZoneRecord, error) {
 	records := c.GetRecordsByType(zone, recordType)
 	if records == nil {
